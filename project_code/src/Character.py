@@ -24,3 +24,37 @@ class Character:
 
     def _generate_name(self):
         return "Bob"
+    
+import random
+
+class Character:
+    def __init__(self, name: str = None):
+        self.name = self._generate_name() if name is None else name
+        # Initiate each core stat with a random legacy points value
+        self.strength = Strength(random.randint(1, 100))
+        self.dexterity = Dexterity(random.randint(1, 100))
+        self.constitution = Constitution(random.randint(1, 100))
+        self.vitality = Vitality(random.randint(1, 100))
+        self.endurance = Endurance(random.randint(1, 100))
+        self.intelligence = Intelligence(random.randint(1, 100))
+        self.wisdom = Wisdom(random.randint(1, 100))
+        self.knowledge = Knowledge(random.randint(1, 100))
+        self.willpower = Willpower(random.randint(1, 100))
+        self.spirit = Spirit(random.randint(1, 100))
+        # Continue with the rest of your stats
+
+    def _generate_name(self):
+        # This method could be more sophisticated, generating random or themed names
+        names = ["Alice", "Bob", "Cassandra", "Dante", "Eve"]
+        return random.choice(names)
+
+    def display_stats(self):
+        # A simple method to display the character's stats
+        print(f"Name: {self.name}")
+        for attr, value in self.__dict__.items():
+            if isinstance(value, Statistic):
+                print(f"{attr.capitalize()}: {value.value}")  # Assuming you want to print the value of each stat
+
+# Example usage:
+char = Character()
+char.display_stats()
