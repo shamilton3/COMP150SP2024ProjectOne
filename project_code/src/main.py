@@ -1,20 +1,34 @@
 # main.py
-import json
 import sys
 from typing import List
 import random
+from enum import Enum
+
 
 class Location:
     def __init__(self, name, description):
         self.name = name
         self.description = description
+        self.events = []
+        self.events_we_have_seen = []
+
+    def add_event(self, event):
+        self.events.append(event)
 
     def describe_location(self):
         print(f"{self.name}: {self.description}")
 
+    def get_event(self):
+        event = self.events.pop(0)
+        self.events_we_have_seen.append(event)
+        return event
+
+
 class WildWestLocation(Location):
-    def __init__(self, name, description, inhabitants=[]):
+    def __init__(self, name, description, inhabitants=None):
         super().__init__(name, description)
+        if inhabitants is None:
+            inhabitants = []
         self.inhabitants = inhabitants
         self.visited = True  # Marking the location as visited to show the welcome message
 
@@ -31,9 +45,6 @@ class WildWestLocation(Location):
             print(f"The {self.name} is deserted.")
 
 
-from enum import Enum
-
-
 class EventStatus(Enum):
     UNKNOWN = "unknown"
     PASS = "pass"
@@ -43,7 +54,7 @@ class EventStatus(Enum):
 
 class Event:
     def __init__(self, parser, data: dict = None):
-        self.parser = parser
+        self.parser: UserInputParser = parser
         # parse json file
         if data:
             self.primary = data.get('primary_attribute')
@@ -59,8 +70,8 @@ class Event:
         self.default_partial_pass_message = {"message": "You partially passed."}
         self.prompt_text = "A dragon appears, what will you do?"
 
-        self.primary_statistic = Strength()
-        self.secondary_statistic = Dexterity()
+        self.primary_statistic = Strength(0)
+        self.secondary_statistic = Dexterity(0)
 
     def execute(self, party):
         chosen_one = self.parser.select_party_member(party)
@@ -72,8 +83,16 @@ class Event:
         self.status = status
 
     def resolve_choice(self, party, character, chosen_skill):
-        # Implement the logic for checking if the chosen skill attributes overlap with the event attributes
-        pass
+        if self.primary == chosen_skill.__class__.__name__ and self.secondary == chosen_skill.__class__.__name__:
+            self.set_status(EventStatus.PASS)
+            print(self.pass_)
+        elif self.primary == chosen_skill.__class__.__name__ or self.secondary == chosen_skill.__class__.__name__:
+            self.set_status(EventStatus.PARTIAL_PASS)
+            print(self.partial_pass)
+        else:
+            self.set_status(EventStatus.FAIL)
+            print(self.fail)
+
 
 class Character:
     def __init__(self, name: str = None):
@@ -88,7 +107,8 @@ class Character:
         - Wisdom: How effectively you can make choices under pressure. Generally low in younger people.
         - Knowledge: How much you know? This is a raw score for all knowledge. Characters may have specific areas of expertise with a bonus or deficit in some areas.
         - Willpower: How quickly or effectively the character can overcome natural urges. How susceptible they are to mind control.
-        - Spirit: Catchall for ability to perform otherworldly acts. High spirit is rare. Different skills have different resource pools they might use like mana, stamina, etc. These are unaffected by spirit. Instead spirit is a measure of how hard it is to learn new otherworldly skills and/or master general skills.
+        - Spirit: Catchall for ability to perform otherworldly acts. High spirit is rare. Different skills have different resource pools they might use like mana, stamina, etc. These are unaffected by spirit.
+        Instead, spirit is a measure of how hard it is to learn new otherworldly skills and/or master general skills.
         """
         self.name = self._generate_name() if name is None else name
         self.strength = Strength(0)
@@ -103,7 +123,7 @@ class Character:
         self.spirit = Spirit(0)
 
     def _generate_name(self):
-        return "Sheriff"
+        return "Unnamed Character"
 
 
 class Sheriff(Character):
@@ -226,6 +246,7 @@ class Deputy(Character):
         self.constitution = Constitution(75)
         self.vitality = Vitality(80)
 
+
 class Horse(Character):
     def __init__(self, name: str = None):
         super().__init__(name)
@@ -240,6 +261,7 @@ class Horse(Character):
         self.wisdom = Wisdom(5)
         self.constitution = Constitution(90)
         self.vitality = Vitality(80)
+
 
 class Game:
 
@@ -268,15 +290,47 @@ class Game:
         self.events.append(event)
 
     def _initialize_game(self):
-        """Initialize the game with characters, locations, and events based on the user's properties."""
-        character_list = [Character() for _ in range(10)]
-        location_list = [Location(self.parser) for _ in range(2)]
+        sheriff = Sheriff()
+        outlaw = Outlaw()
+        bartender = Bartender()
+        snake = Snake()
+        bandit = Bandit()
+        doctor = Doctor()
+        mayor = Mayor()
+        deputy = Deputy()
+        horse = Horse()
 
-        for character in character_list:
-            self.add_character(character)
+        self.add_character(sheriff)
+        self.add_character(outlaw)
+        self.add_character(bartender)
+        self.add_character(snake)
+        self.add_character(bandit)
+        self.add_character(doctor)
+        self.add_character(mayor)
+        self.add_character(deputy)
+        self.add_character(horse)
 
-        for location in location_list:
-            self.add_location(location)
+        saloon = WildWestLocation("Saloon", "A lively saloon filled with patrons and music.")
+        jail = WildWestLocation("Jail", "A dusty jail with empty cells.")
+
+        self.add_location(saloon)
+        self.add_location(jail)
+
+        event1 = Event(self.parser, {"primary_attribute": "Strength", "secondary_attribute": "Dexterity",
+                                     "prompt_text": "A bar fight breaks out. What do you do?",
+                                     "pass": "You successfully break up the fight.",
+                                     "fail": "You get caught in the middle of the fight.",
+                                     "partial_pass": "You manage to dodge the punches but fail to stop the fight."})
+        event2 = Event(self.parser, {"primary_attribute": "Intelligence", "secondary_attribute": "Wisdom",
+                                     "prompt_text": "A mysterious stranger offers you a secret job. What do you do?",
+                                     "pass": "You wisely decline the offer, sensing something isn't right.",
+                                     "fail": "You accept the job, not realizing it's a setup.",
+                                     "partial_pass": "You hesitate, asking for more information before deciding."})
+
+        saloon.add_event(event1)
+        jail.add_event(event2)
+
+        self.party = [sheriff, outlaw, bartender]
 
     def start_game(self):
         return self._main_game_loop()
@@ -285,7 +339,7 @@ class Game:
         """The main game loop."""
         while self.continue_playing:
             self.current_location = self.locations[0]
-            self.current_event = self.current_location.getEvent()
+            self.current_event = self.current_location.get_event()
 
             self.current_event.execute()
 
@@ -309,8 +363,8 @@ class User:
         self.username = username
         self.password = password
         self.legacy_points = legacy_points
-        self.current_game = self._get_retrieve_saved_game_state_or_create_new_game()
         self.parser = parser
+        self.current_game = self._get_retrieve_saved_game_state_or_create_new_game()
 
     def _get_retrieve_saved_game_state_or_create_new_game(self) -> Game:
         new_game = Game(self.parser)
@@ -328,6 +382,21 @@ class UserInputParser:
     def parse(self, prompt) -> str:
         response: str = input(prompt)
         return response
+
+    def select_party_member(self, party):
+        print("Select a party member:")
+        for i, member in enumerate(party):
+            print(f"{i + 1}. {member.name}")
+        choice = int(self.parse("Enter the number of the party member: ")) - 1
+        return party[choice]
+
+    def select_skill(self, chosen_one):
+        print("Select a skill:")
+        skills = [attr for attr in dir(chosen_one) if isinstance(getattr(chosen_one, attr), Statistic)]
+        for i, skill in enumerate(skills):
+            print(f"{i + 1}. {skill}")
+        choice = int(self.parse("Enter the number of the skill: ")) - 1
+        return getattr(chosen_one, skills[choice])
 
 
 class UserFactory:
@@ -360,10 +429,11 @@ class InstanceCreator:
             return None
 
     def _load_user(self) -> User:
-        pass
-
-
-
+        username = self.parser.parse("Enter your username: ")
+        password = self.parser.parse("Enter your password: ")
+        # Here you would typically load the user from a database or file
+        # For simplicity, let's assume the user exists with some legacy points
+        return User(self.parser, username=username, password=password, legacy_points=100)
 
 
 class Statistic:
@@ -391,112 +461,72 @@ class Statistic:
         """This is just a placeholder for now. Perhaps some statistics will be based on user properties, and others 
         will be random."""
         return legacy_points / 100 + random.randint(1, 3)
-    
-class Strength(Statistic):
 
-    def __init__(self, value):
-        super().__init__(value)
-        self.description = "Strength is a measure of physical power."
-    import random
-
-class Statistic:
-    def __init__(self, legacy_points: int):
-        self.value = self._generate_starting_value(legacy_points)
-        self.description = None
-        self.min_value = 0
-        self.max_value = 100
-
-    def __str__(self):
-        return f"{self.value}"
-
-    def increase(self, amount):
-        self.value += amount
-        if self.value > self.max_value:
-            self.value = self.max_value
-
-    def decrease(self, amount):
-        self.value -= amount
-        if self.value < self.min_value:
-            self.value = self.min_value
-
-    def _generate_starting_value(self, legacy_points: int):
-        """Generate a starting value for the statistic based on random number and user properties."""
-        """This is just a placeholder for now. Perhaps some statistics will be based on user properties, and others 
-        will be random."""
-        return legacy_points / 100 + random.randint(1, 3)
 
 class Strength(Statistic):
     def __init__(self, legacy_points: int):
         super().__init__(legacy_points)
         self.description = "How much you can lift. How strong you are. How hard you punch, etc."
 
+
 class Dexterity(Statistic):
     def __init__(self, legacy_points: int):
         super().__init__(legacy_points)
         self.description = "How quick your limbs can perform intricate tasks. How adept you are at avoiding blows you anticipate. Impacts speed."
+
 
 class Constitution(Statistic):
     def __init__(self, legacy_points: int):
         super().__init__(legacy_points)
         self.description = "The body's natural armor. Characters may have unique positive or negative constitutions that provide additional capabilities."
 
+
 class Vitality(Statistic):
     def __init__(self, legacy_points: int):
         super().__init__(legacy_points)
         self.description = "A measure of how lively you feel. How many Hit Points you have. An indirect measure of age."
+
 
 class Endurance(Statistic):
     def __init__(self, legacy_points: int):
         super().__init__(legacy_points)
         self.description = "How fast you recover from injuries. How quickly you recover from fatigue."
 
+
 class Intelligence(Statistic):
     def __init__(self, legacy_points: int):
         super().__init__(legacy_points)
         self.description = "How smart you are. How quickly you can connect the dots to solve problems. How fast you can think."
+
 
 class Wisdom(Statistic):
     def __init__(self, legacy_points: int):
         super().__init__(legacy_points)
         self.description = "How effectively you can make choices under pressure. Generally low in younger people."
 
+
 class Knowledge(Statistic):
     def __init__(self, legacy_points: int):
         super().__init__(legacy_points)
         self.description = "How much you know? This is a raw score for all knowledge. Characters may have specific areas of expertise with a bonus or deficit in some areas."
+
 
 class Willpower(Statistic):
     def __init__(self, legacy_points: int):
         super().__init__(legacy_points)
         self.description = "How quickly or effectively the character can overcome natural urges. How susceptible they are to mind control."
 
+
 class Spirit(Statistic):
     def __init__(self, legacy_points: int):
         super().__init__(legacy_points)
         self.description = "Catchall for ability to perform otherworldly acts. High spirit is rare. Different skills have different resource pools they might use like mana, stamina, etc. These are unaffected by spirit. Instead spirit is a measure of how hard it is to learn new otherworldly skills and/or master general skills."
 
+
 class Charisma(Statistic):
     def __init__(self, legacy_points: int):
         super().__init__(legacy_points)
         self.description = "Charisma represents charm, persuasion, and leadership qualities."
-
-
-
-class User:
-
-    def __init__(self, parser, username: str, password: str, legacy_points: int = 0):
-        self.username = username
-        self.password = password
-        self.legacy_points = legacy_points
-        self.parser = parser
-        self.current_game = self._get_retrieve_saved_game_state_or_create_new_game()
-
-    def _get_retrieve_saved_game_state_or_create_new_game(self) -> Game:
-        new_game = Game(self.parser)
-        return new_game
-
-    def save_game(self):
-        pass
 
 
 def start_game():
