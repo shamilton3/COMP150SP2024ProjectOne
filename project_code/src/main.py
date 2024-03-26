@@ -4,30 +4,23 @@ import sys
 from typing import List
 import random
 
-
 class Location:
-    pass 
     def __init__(self, name, description):
         self.name = name
         self.description = description
-        self.visited = False
 
-    def __str__(self):
-        return f"{self.name}: {self.description}"
-
-    def visit(self):
-        self.visited = True
-        print(f"You have visited {self.name}.")
-
-    def leave(self):
-        self.visited = False
-        print(f"You leave {self.name}.")
-
+    def describe_location(self):
+        print(f"{self.name}: {self.description}")
 
 class WildWestLocation(Location):
     def __init__(self, name, description, inhabitants=[]):
         super().__init__(name, description)
         self.inhabitants = inhabitants
+        self.visited = True  # Marking the location as visited to show the welcome message
+
+    def describe_location(self):
+        print("Welcome to the Wild West!")
+        print(f"{self.name}: {self.description}")
 
     def describe_inhabitants(self):
         if self.inhabitants:
@@ -36,8 +29,6 @@ class WildWestLocation(Location):
                 print(f"- {inhabitant}")
         else:
             print(f"The {self.name} is deserted.")
-
-
 
 
 from enum import Enum
@@ -85,29 +76,170 @@ class Event:
         pass
 
 class Character:
-
     def __init__(self, name: str = None):
         """
-        Core Stats: Everyone has these ad some text
+        Core Stats: Everyone has these attributes.
         - Strength: How much you can lift. How strong you are. How hard you punch, etc.
         - Dexterity: How quick your limbs can perform intricate tasks. How adept you are at avoiding blows you anticipate. Impacts speed.
-        - Constitution: The bodies natural armor. Characters may have unique positive or negative constitutions that provide additional capabilities
-        - vitality: A measure of how lively you feel. How many Hit Points you have. An indirect measure of age.
+        - Constitution: The body's natural armor. Characters may have unique positive or negative constitutions that provide additional capabilities.
+        - Vitality: A measure of how lively you feel. How many Hit Points you have. An indirect measure of age.
         - Endurance: How fast you recover from injuries. How quickly you recover from fatigue.
         - Intelligence: How smart you are. How quickly you can connect the dots to solve problems. How fast you can think.
         - Wisdom: How effectively you can make choices under pressure. Generally low in younger people.
         - Knowledge: How much you know? This is a raw score for all knowledge. Characters may have specific areas of expertise with a bonus or deficit in some areas.
         - Willpower: How quickly or effectively the character can overcome natural urges. How susceptible they are to mind control.
         - Spirit: Catchall for ability to perform otherworldly acts. High spirit is rare. Different skills have different resource pools they might use like mana, stamina, etc. These are unaffected by spirit. Instead spirit is a measure of how hard it is to learn new otherworldly skills and/or master general skills.
-         """
+        """
         self.name = self._generate_name() if name is None else name
-        self.strength: Strength = Strength(self)
-        # etc
-        # self.intelligence: Intelligence = Intelligence(self)
+        self.strength = Strength(0)
+        self.dexterity = Dexterity(0)
+        self.constitution = Constitution(0)
+        self.vitality = Vitality(0)
+        self.endurance = Endurance(0)
+        self.intelligence = Intelligence(0)
+        self.wisdom = Wisdom(0)
+        self.knowledge = Knowledge(0)
+        self.willpower = Willpower(0)
+        self.spirit = Spirit(0)
 
     def _generate_name(self):
-        return "Bob"
+        return "Sheriff"
 
+
+class Sheriff(Character):
+    def __init__(self, name: str = None):
+        super().__init__(name)
+        self.strength = Strength(90)
+        self.dexterity = Dexterity(90)
+        self.constitution = Constitution(90)
+        self.vitality = Vitality(75)
+        self.endurance = Endurance(85)
+        self.intelligence = Intelligence(60)
+        self.wisdom = Wisdom(60)
+        self.knowledge = Knowledge(60)
+        self.willpower = Willpower(90)
+        self.spirit = Spirit(90)
+
+
+class Outlaw(Character):
+    def __init__(self, name: str = None):
+        super().__init__(name)
+        self.strength = Strength(90)
+        self.dexterity = Dexterity(90)
+        self.constitution = Constitution(100)
+        self.vitality = Vitality(50)
+        self.endurance = Endurance(75)
+        self.intelligence = Intelligence(70)
+        self.wisdom = Wisdom(50)
+        self.knowledge = Knowledge(70)
+        self.willpower = Willpower(50)
+        self.spirit = Spirit(50)
+
+
+class Bartender(Character):
+    def __init__(self, name: str = None):
+        super().__init__(name)
+        self.strength = Strength(80)
+        self.dexterity = Dexterity(90)
+        self.constitution = Constitution(85)
+        self.vitality = Vitality(75)
+        self.endurance = Endurance(75)
+        self.intelligence = Intelligence(90)
+        self.wisdom = Wisdom(80)
+        self.knowledge = Knowledge(90)
+        self.willpower = Willpower(75)
+        self.spirit = Spirit(80)
+
+
+class Snake(Character):
+    def __init__(self, name: str = None):
+        super().__init__(name)
+        self.strength = Strength(80)
+        self.dexterity = Dexterity(60)
+        self.constitution = Constitution(90)
+        self.vitality = Vitality(50)
+        self.endurance = Endurance(30)
+        self.intelligence = Intelligence(20)
+        self.wisdom = Wisdom(5)
+        self.knowledge = Knowledge(5)
+        self.willpower = Willpower(50)
+        self.spirit = Spirit(50)
+
+
+class Bandit(Character):
+    def __init__(self, name: str = None):
+        super().__init__(name)
+        self.strength = Strength(65)
+        self.dexterity = Dexterity(90)
+        self.constitution = Constitution(100)
+        self.vitality = Vitality(50)
+        self.endurance = Endurance(75)
+        self.intelligence = Intelligence(30)
+        self.wisdom = Wisdom(50)
+        self.knowledge = Knowledge(30)
+        self.willpower = Willpower(50)
+        self.spirit = Spirit(50)
+
+
+class Doctor(Character):
+    def __init__(self, name: str = None):
+        super().__init__(name)
+        self.strength = Strength(40)
+        self.dexterity = Dexterity(90)
+        self.constitution = Constitution(60)
+        self.vitality = Vitality(50)
+        self.endurance = Endurance(75)
+        self.intelligence = Intelligence(90)
+        self.wisdom = Wisdom(75)
+        self.knowledge = Knowledge(90)
+        self.willpower = Willpower(50)
+        self.spirit = Spirit(90)
+
+
+class Mayor(Character):
+    def __init__(self, name: str = None):
+        super().__init__(name)
+        self.strength = Strength(95)
+        self.dexterity = Dexterity(90)
+        self.constitution = Constitution(100)
+        self.vitality = Vitality(85)
+        self.endurance = Endurance(75)
+        self.intelligence = Intelligence(90)
+        self.wisdom = Wisdom(80)
+        self.knowledge = Knowledge(90)
+        self.willpower = Willpower(50)
+        self.spirit = Spirit(50)
+
+
+class Deputy(Character):
+    def __init__(self, name: str = None):
+        super().__init__(name)
+        self.strength = Strength(65)
+        self.intelligence = Intelligence(90)
+        self.charisma = Charisma(90)
+        self.knowledge = Knowledge(90)
+        self.endurance = Endurance(75)
+        self.dexterity = Dexterity(80)
+        self.willpower = Willpower(60)
+        self.spirit = Spirit(80)
+        self.wisdom = Wisdom(60)
+        self.constitution = Constitution(75)
+        self.vitality = Vitality(80)
+
+class Horse(Character):
+    def __init__(self, name: str = None):
+        super().__init__(name)
+        self.strength = Strength(80)
+        self.intelligence = Intelligence(5)
+        self.charisma = Charisma(90)
+        self.knowledge = Knowledge(5)
+        self.endurance = Endurance(90)
+        self.dexterity = Dexterity(80)
+        self.willpower = Willpower(60)
+        self.spirit = Spirit(80)
+        self.wisdom = Wisdom(5)
+        self.constitution = Constitution(90)
+        self.vitality = Vitality(80)
 
 class Game:
 
@@ -259,13 +391,95 @@ class Statistic:
         """This is just a placeholder for now. Perhaps some statistics will be based on user properties, and others 
         will be random."""
         return legacy_points / 100 + random.randint(1, 3)
-
-
+    
 class Strength(Statistic):
 
     def __init__(self, value):
         super().__init__(value)
         self.description = "Strength is a measure of physical power."
+    import random
+
+class Statistic:
+    def __init__(self, legacy_points: int):
+        self.value = self._generate_starting_value(legacy_points)
+        self.description = None
+        self.min_value = 0
+        self.max_value = 100
+
+    def __str__(self):
+        return f"{self.value}"
+
+    def increase(self, amount):
+        self.value += amount
+        if self.value > self.max_value:
+            self.value = self.max_value
+
+    def decrease(self, amount):
+        self.value -= amount
+        if self.value < self.min_value:
+            self.value = self.min_value
+
+    def _generate_starting_value(self, legacy_points: int):
+        """Generate a starting value for the statistic based on random number and user properties."""
+        """This is just a placeholder for now. Perhaps some statistics will be based on user properties, and others 
+        will be random."""
+        return legacy_points / 100 + random.randint(1, 3)
+
+class Strength(Statistic):
+    def __init__(self, legacy_points: int):
+        super().__init__(legacy_points)
+        self.description = "How much you can lift. How strong you are. How hard you punch, etc."
+
+class Dexterity(Statistic):
+    def __init__(self, legacy_points: int):
+        super().__init__(legacy_points)
+        self.description = "How quick your limbs can perform intricate tasks. How adept you are at avoiding blows you anticipate. Impacts speed."
+
+class Constitution(Statistic):
+    def __init__(self, legacy_points: int):
+        super().__init__(legacy_points)
+        self.description = "The body's natural armor. Characters may have unique positive or negative constitutions that provide additional capabilities."
+
+class Vitality(Statistic):
+    def __init__(self, legacy_points: int):
+        super().__init__(legacy_points)
+        self.description = "A measure of how lively you feel. How many Hit Points you have. An indirect measure of age."
+
+class Endurance(Statistic):
+    def __init__(self, legacy_points: int):
+        super().__init__(legacy_points)
+        self.description = "How fast you recover from injuries. How quickly you recover from fatigue."
+
+class Intelligence(Statistic):
+    def __init__(self, legacy_points: int):
+        super().__init__(legacy_points)
+        self.description = "How smart you are. How quickly you can connect the dots to solve problems. How fast you can think."
+
+class Wisdom(Statistic):
+    def __init__(self, legacy_points: int):
+        super().__init__(legacy_points)
+        self.description = "How effectively you can make choices under pressure. Generally low in younger people."
+
+class Knowledge(Statistic):
+    def __init__(self, legacy_points: int):
+        super().__init__(legacy_points)
+        self.description = "How much you know? This is a raw score for all knowledge. Characters may have specific areas of expertise with a bonus or deficit in some areas."
+
+class Willpower(Statistic):
+    def __init__(self, legacy_points: int):
+        super().__init__(legacy_points)
+        self.description = "How quickly or effectively the character can overcome natural urges. How susceptible they are to mind control."
+
+class Spirit(Statistic):
+    def __init__(self, legacy_points: int):
+        super().__init__(legacy_points)
+        self.description = "Catchall for ability to perform otherworldly acts. High spirit is rare. Different skills have different resource pools they might use like mana, stamina, etc. These are unaffected by spirit. Instead spirit is a measure of how hard it is to learn new otherworldly skills and/or master general skills."
+
+class Charisma(Statistic):
+    def __init__(self, legacy_points: int):
+        super().__init__(legacy_points)
+        self.description = "Charisma represents charm, persuasion, and leadership qualities."
+
 
 
 class User:
