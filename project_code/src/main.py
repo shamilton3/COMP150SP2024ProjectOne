@@ -140,7 +140,6 @@ class Sheriff(Character):
         self.willpower = Willpower(90)
         self.spirit = Spirit(90)
 
-
 class Outlaw(Character):
     def __init__(self, name: str = None):
         super().__init__(name)
