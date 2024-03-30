@@ -555,3 +555,37 @@ def start_game():
 if __name__ == '__main__':
     start_game()
 #will commit in the morning
+#did a plot and theme 
+#Plot
+
+#Looks good to me I think we can use this as a basis for the background for out game. Also just realized that we did not make any unit tests for our game as well so we need to implement that. 
+#Bet, maybe we can stay after. Also I just thought maybe we can go to the computer science center. I’m also going to ask Allan for help.
+#That a good idea. I was planning on staying anyway but I think getting help from the center to determine how our code looks and its framework will be a good idea. Especially for this extra credit since what he’s asking for we need to have
+
+#Put skill class under characters. 
+#Characters:
+
+#Antagonists: 
+#Mayor- All stats are in the high 90s
+#Outlaw - All stats avg in 70s
+#Bandit - Stats avg is the 50
+#Snakes - Stats avg in the 40s
+
+#In-between 
+#Doctor- stats can range in the 100s
+#Town- The stats can range is the 100s
+
+#Protagonists
+#Sheriff - Some stats in the 90s and some in 70s
+#Deputy- Stats in the high 80’s and 90s
+#Bartender- Stats are in the 90s
+#Horse
+
+#Graphics for extra credit
+#Extra credit for sounds
+#Buttons to press for extra credit
+
+
+
+#Skills go
+ #above character. 
