@@ -1,591 +1,333 @@
-# main.py
-import sys
-from typing import List
 import random
-from enum import Enum
-
-
-class Location:
-    def __init__(self, name, description):
-        self.name = name
-        self.description = description
-        self.events = []
-        self.events_we_have_seen = []
-
-    def add_event(self, event):
-        self.events.append(event)
-
-    def describe_location(self):
-        print(f"{self.name}: {self.description}")
-
-    def get_event(self):
-        event = self.events.pop(0)
-        self.events_we_have_seen.append(event)
-        return event
-
-
-class WildWestLocation(Location):
-    def __init__(self, name, description, inhabitants=None):
-        super().__init__(name, description)
-        if inhabitants is None:
-            inhabitants = []
-        self.inhabitants = inhabitants
-        self.visited = True  # Marking the location as visited to show the welcome message
-
-    def describe_location(self):
-        print("Welcome to the Wild West!")
-        print(f"{self.name}: {self.description}")
-
-    def describe_inhabitants(self):
-        if self.inhabitants:
-            print(f"The {self.name} is populated by:")
-            for inhabitant in self.inhabitants:
-                print(f"- {inhabitant}")
-        else:
-            print(f"The {self.name} is deserted.")
-
-
-class EventStatus(Enum):
-    UNKNOWN = "unknown"
-    PASS = "pass"
-    FAIL = "fail"
-    PARTIAL_PASS = "partial_pass"
-
-
-class Event:
-    def __init__(self, parser, data: dict = None):
-        self.parser: UserInputParser = parser
-        # parse json file
-        if data:
-            self.primary = data.get('primary_attribute')
-            self.secondary = data.get('secondary_attribute')
-            self.prompt_text = data.get('prompt_text')
-            self.pass_ = data.get('pass')
-            self.fail = data.get('fail')
-            self.partial_pass = data.get('partial_pass')
-
-        self.status = EventStatus.UNKNOWN
-        self.default_fail_message = {"message": "You failed."}
-        self.default_pass_message = {"message": "You passed."}
-        self.default_partial_pass_message = {"message": "You partially passed."}
-        self.prompt_text = "A dragon appears, what will you do?"
-
-        self.primary_statistic = Strength(0)
-        self.secondary_statistic = Dexterity(0)
-
-    def execute(self, party):
-        chosen_one = self.parser.select_party_member(party)
-        chosen_skill = self.parser.select_skill(chosen_one)
-
-        self.resolve_choice(party, chosen_one, chosen_skill)
-
-    def set_status(self, status: EventStatus = EventStatus.UNKNOWN):
-        self.status = status
-
-    def resolve_choice(self, party, character, chosen_skill):
-        if self.primary == chosen_skill.__class__.__name__ and self.secondary == chosen_skill.__class__.__name__:
-            self.set_status(EventStatus.PASS)
-            print(self.pass_)
-        elif self.primary == chosen_skill.__class__.__name__ or self.secondary == chosen_skill.__class__.__name__:
-            self.set_status(EventStatus.PARTIAL_PASS)
-            print(self.partial_pass)
-        else:
-            self.set_status(EventStatus.FAIL)
-            print(self.fail)
-
 
 class Character:
-    def __init__(self, name: str = None):
-        """
-        Core Stats: Everyone has these attributes.
-        - Strength: How much you can lift. How strong you are. How hard you punch, etc.
-        - Dexterity: How quick your limbs can perform intricate tasks. How adept you are at avoiding blows you anticipate. Impacts speed.
-        - Constitution: The body's natural armor. Characters may have unique positive or negative constitutions that provide additional capabilities.
-        - Vitality: A measure of how lively you feel. How many Hit Points you have. An indirect measure of age.
-        - Endurance: How fast you recover from injuries. How quickly you recover from fatigue.
-        - Intelligence: How smart you are. How quickly you can connect the dots to solve problems. How fast you can think.
-        - Wisdom: How effectively you can make choices under pressure. Generally low in younger people.
-        - Knowledge: How much you know? This is a raw score for all knowledge. Characters may have specific areas of expertise with a bonus or deficit in some areas.
-        - Willpower: How quickly or effectively the character can overcome natural urges. How susceptible they are to mind control.
-        - Spirit: Catchall for ability to perform otherworldly acts. High spirit is rare. Different skills have different resource pools they might use like mana, stamina, etc. These are unaffected by spirit.
-        Instead, spirit is a measure of how hard it is to learn new otherworldly skills and/or master general skills.
-        """
-        self.name = self._generate_name() if name is None else name
-        self.strength = Strength(0)
-        self.dexterity = Dexterity(0)
-        self.constitution = Constitution(0)
-        self.vitality = Vitality(0)
-        self.endurance = Endurance(0)
-        self.intelligence = Intelligence(0)
-        self.wisdom = Wisdom(0)
-        self.knowledge = Knowledge(0)
-        self.willpower = Willpower(0)
-        self.spirit = Spirit(0)
+    def __init__(self, name, max_health):
+        self.name = name
+        self.max_health = max_health
+        self.health = max_health
 
-    def _generate_name(self):
-        return "Unnamed Character"
+    def take_damage(self, damage):
+        self.health -= damage
+        if self.health <= 0:
+            print(f"{self.name} has been defeated!")
 
+    def attack(self, target, damage):
+        print(f"{self.name} attacks {target.name} for {damage} damage!")
+        target.take_damage(damage)
 
-class Sheriff(Character):
-    def __init__(self, name: str = None):
-        super().__init__(name)
-        self.strength = Strength(90)
-        self.dexterity = Dexterity(90)
-        self.constitution = Constitution(90)
-        self.vitality = Vitality(75)
-        self.endurance = Endurance(85)
-        self.intelligence = Intelligence(60)
-        self.wisdom = Wisdom(60)
-        self.knowledge = Knowledge(60)
-        self.willpower = Willpower(90)
-        self.spirit = Spirit(90)
+    def heal(self):
+        self.health = self.max_health
+        print(f"{self.name} has been fully healed!")
 
-class Outlaw(Character):
-    def __init__(self, name: str = None):
-        super().__init__(name)
-        self.strength = Strength(90)
-        self.dexterity = Dexterity(90)
-        self.constitution = Constitution(100)
-        self.vitality = Vitality(50)
-        self.endurance = Endurance(75)
-        self.intelligence = Intelligence(70)
-        self.wisdom = Wisdom(50)
-        self.knowledge = Knowledge(70)
-        self.willpower = Willpower(50)
-        self.spirit = Spirit(50)
-
-
-class Bartender(Character):
-    def __init__(self, name: str = None):
-        super().__init__(name)
-        self.strength = Strength(80)
-        self.dexterity = Dexterity(90)
-        self.constitution = Constitution(85)
-        self.vitality = Vitality(75)
-        self.endurance = Endurance(75)
-        self.intelligence = Intelligence(90)
-        self.wisdom = Wisdom(80)
-        self.knowledge = Knowledge(90)
-        self.willpower = Willpower(75)
-        self.spirit = Spirit(80)
-
-
-class Snake(Character):
-    def __init__(self, name: str = None):
-        super().__init__(name)
-        self.strength = Strength(80)
-        self.dexterity = Dexterity(60)
-        self.constitution = Constitution(90)
-        self.vitality = Vitality(50)
-        self.endurance = Endurance(30)
-        self.intelligence = Intelligence(20)
-        self.wisdom = Wisdom(5)
-        self.knowledge = Knowledge(5)
-        self.willpower = Willpower(50)
-        self.spirit = Spirit(50)
-
-
-class Bandit(Character):
-    def __init__(self, name: str = None):
-        super().__init__(name)
-        self.strength = Strength(65)
-        self.dexterity = Dexterity(90)
-        self.constitution = Constitution(100)
-        self.vitality = Vitality(50)
-        self.endurance = Endurance(75)
-        self.intelligence = Intelligence(30)
-        self.wisdom = Wisdom(50)
-        self.knowledge = Knowledge(30)
-        self.willpower = Willpower(50)
-        self.spirit = Spirit(50)
-
-
-class Doctor(Character):
-    def __init__(self, name: str = None):
-        super().__init__(name)
-        self.strength = Strength(40)
-        self.dexterity = Dexterity(90)
-        self.constitution = Constitution(60)
-        self.vitality = Vitality(50)
-        self.endurance = Endurance(75)
-        self.intelligence = Intelligence(90)
-        self.wisdom = Wisdom(75)
-        self.knowledge = Knowledge(90)
-        self.willpower = Willpower(50)
-        self.spirit = Spirit(90)
-
-
-class Mayor(Character):
-    def __init__(self, name: str = None):
-        super().__init__(name)
-        self.strength = Strength(95)
-        self.dexterity = Dexterity(90)
-        self.constitution = Constitution(100)
-        self.vitality = Vitality(85)
-        self.endurance = Endurance(75)
-        self.intelligence = Intelligence(90)
-        self.wisdom = Wisdom(80)
-        self.knowledge = Knowledge(90)
-        self.willpower = Willpower(50)
-        self.spirit = Spirit(50)
-
-
-class Deputy(Character):
-    def __init__(self, name: str = None):
-        super().__init__(name)
-        self.strength = Strength(65)
-        self.intelligence = Intelligence(90)
-        self.charisma = Charisma(90)
-        self.knowledge = Knowledge(90)
-        self.endurance = Endurance(75)
-        self.dexterity = Dexterity(80)
-        self.willpower = Willpower(60)
-        self.spirit = Spirit(80)
-        self.wisdom = Wisdom(60)
-        self.constitution = Constitution(75)
-        self.vitality = Vitality(80)
-
-
-class Horse(Character):
-    def __init__(self, name: str = None):
-        super().__init__(name)
-        self.strength = Strength(80)
-        self.intelligence = Intelligence(5)
-        self.charisma = Charisma(90)
-        self.knowledge = Knowledge(5)
-        self.endurance = Endurance(90)
-        self.dexterity = Dexterity(80)
-        self.willpower = Willpower(60)
-        self.spirit = Spirit(80)
-        self.wisdom = Wisdom(5)
-        self.constitution = Constitution(90)
-        self.vitality = Vitality(80)
-
+class Location:
+    def __init__(self, name):
+        self.name = name
 
 class Game:
-
-    def __init__(self, parser):
-        self.parser = parser
-        self.characters: List[Character] = []
-        self.locations: List[Location] = []
-        self.events: List[Event] = []
-        self.party: List[Character] = []
-        self.current_location = None
-        self.current_event = None
-        self.continue_playing = True
-
-        self._initialize_game()
-
-    def add_character(self, character: Character):
-        """Add a character to the game."""
-        self.characters.append(character)
-
-    def add_location(self, location: Location):
-        """Add a location to the game."""
-        self.locations.append(location)
-
-    def add_event(self, event: Event):
-        """Add an event to the game."""
-        self.events.append(event)
-
-    def _initialize_game(self):
-        sheriff = Sheriff()
-        outlaw = Outlaw()
-        bartender = Bartender()
-        snake = Snake()
-        bandit = Bandit()
-        doctor = Doctor()
-        mayor = Mayor()
-        deputy = Deputy()
-        horse = Horse()
-
-        self.add_character(sheriff)
-        self.add_character(outlaw)
-        self.add_character(bartender)
-        self.add_character(snake)
-        self.add_character(bandit)
-        self.add_character(doctor)
-        self.add_character(mayor)
-        self.add_character(deputy)
-        self.add_character(horse)
-
-        saloon = WildWestLocation("Saloon", "A lively saloon filled with patrons and music.")
-        jail = WildWestLocation("Jail", "A dusty jail with empty cells.")
-
-        self.add_location(saloon)
-        self.add_location(jail)
-
-        event1 = Event(self.parser, {"primary_attribute": "Strength", "secondary_attribute": "Dexterity",
-                                     "prompt_text": "A bar fight breaks out. What do you do?",
-                                     "pass": "You successfully break up the fight.",
-                                     "fail": "You get caught in the middle of the fight.",
-                                     "partial_pass": "You manage to dodge the punches but fail to stop the fight."})
-        event2 = Event(self.parser, {"primary_attribute": "Intelligence", "secondary_attribute": "Wisdom",
-                                     "prompt_text": "A mysterious stranger offers you a secret job. What do you do?",
-                                     "pass": "You wisely decline the offer, sensing something isn't right.",
-                                     "fail": "You accept the job, not realizing it's a setup.",
-                                     "partial_pass": "You hesitate, asking for more information before deciding."})
-
-        saloon.add_event(event1)
-        jail.add_event(event2)
-
-        self.party = [sheriff, outlaw, bartender]
-
-    def start_game(self):
-        return self._main_game_loop()
-
-    def _main_game_loop(self):
-        """The main game loop."""
-        while self.continue_playing:
-            self.current_location = self.locations[0]
-            self.current_event = self.current_location.get_event()
-
-            self.current_event.execute()
-
-            if self.party is None:
-                # award legacy points
-                self.continue_playing = False
-                return "Save and quit"
-            else:
-                continue
-        if self.continue_playing is False:
-            return True
-        elif self.continue_playing == "Save and quit":
-            return "Save and quit"
-        else:
-            return False
-
-
-class User:
-
-    def __init__(self, parser, username: str, password: str, legacy_points: int = 0):
-        self.username = username
-        self.password = password
-        self.legacy_points = legacy_points
-        self.parser = parser
-        self.current_game = self._get_retrieve_saved_game_state_or_create_new_game()
-
-    def _get_retrieve_saved_game_state_or_create_new_game(self) -> Game:
-        new_game = Game(self.parser)
-        return new_game
-
-    def save_game(self):
-        pass
-
-
-class UserInputParser:
-
     def __init__(self):
-        self.style = "console"
+        self.sheriff = Character("Sheriff", 100)
+        self.deputy = Character("Deputy", 100)
+        self.bartender = Character("Bartender", 100)
+        self.mayor = Character("Mayor", 300)
+        self.outlaw = Character("Outlaw", 100)
+        self.bandit = Character("Bandit", 100)
+        self.doctor = Character("Doctor", 100)
+        self.bank_teller = Character("Bank Teller", 100)
+        self.horse = Character("Horse", 150)
 
-    def parse(self, prompt) -> str:
-        response: str = input(prompt)
-        return response
+        self.locations = {
+            "Saloon": Location("Saloon"),
+            "Hospital": Location("Hospital"),
+            "Sheriff's Office": Location("Sheriff's Office"),
+            "Mayor's Office": Location("Mayor's Office"),
+            "Bank": Location("Bank"),
+            "Inn": Location("Inn"),
+            "City Hall": Location("City Hall"),
+            "Jail": Location("Jail")
+        }
 
-    def select_party_member(self, party):
-        print("Select a party member:")
-        for i, member in enumerate(party):
-            print(f"{i + 1}. {member.name}")
-        choice = int(self.parse("Enter the number of the party member: ")) - 1
-        return party[choice]
+        self.hidden_locations = {
+            "The Pit": Location("The Pit")
+        }
 
-    def select_skill(self, chosen_one):
-        print("Select a skill:")
-        skills = [attr for attr in dir(chosen_one) if isinstance(getattr(chosen_one, attr), Statistic)]
-        for i, skill in enumerate(skills):
-            print(f"{i + 1}. {skill}")
-        choice = int(self.parse("Enter the number of the skill: ")) - 1
-        return getattr(chosen_one, skills[choice])
+        self.current_location = self.locations["Sheriff's Office"]
+        self.has_deputy = False
+        self.has_info = False
+        self.outlaw_in_jail = False
+        self.bandit_in_jail = False
+        self.has_healing_ointment = False
+        self.bartender_joins = False
+        self.visited_bank = False
+        self.has_horse = False
+        self.has_secret_weapon = False
 
+    def start(self):
+        print("Welcome to WildTopia!")
+        print("You are the Sheriff, and your goal is to uncover the corruption in the town and take down the Mayor.")
+        self.play()
 
-class UserFactory:
+    def play(self):
+        while True:
+            print(f"\nYou are currently at the {self.current_location.name}.")
+            print("What would you like to do?")
+            print("1. Travel to another location")
+            print("2. Talk to someone")
+            print("3. Arrest someone")
+            print("4. Attack someone")
+            print("5. Quit the game")
 
-    @staticmethod
-    def create_user(parser: UserInputParser) -> User:
-        username = parser.parse("Enter a username: ")
-        password = parser.parse("Enter a password: ")
-        # Here you can add more logic as needed, e.g., validate input
-        return User(parser, username=username, password=password)
+            choice = input("Enter your choice (1-5): ")
 
+            if choice == "1":
+                self.travel()
+            elif choice == "2":
+                self.talk()
+            elif choice == "3":
+                self.arrest()
+            elif choice == "4":
+                self.attack()
+            elif choice == "5":
+                print("Thanks for playing!")
+                break
+            else:
+                print("Invalid choice. Please try again.")
 
-class InstanceCreator:
+    def travel(self):
+        print("Where would you like to go?")
+        locations = list(self.locations.values())
+        if self.visited_bank:
+            locations.extend(self.hidden_locations.values())
+        for i, location in enumerate(locations):
+            print(f"{i + 1}. {location.name}")
 
-    def __init__(self, user_factory: UserFactory, parser: UserInputParser):
-        self.user_factory = user_factory
-        self.parser = parser
+        choice = int(input("Enter your choice: "))
+        self.current_location = locations[choice - 1]
 
-    def _new_user_or_login(self) -> User:
-        response = self.parser.parse("Create a new username or login to an existing account?")
-        if "login" in response:
-            return self._load_user()
+        if self.current_location.name == "Inn" and self.sheriff.health < 100:
+            print("As you return to the Inn after being treated at the Hospital, you see the Outlaw trying to run away.")
+            print("Do you want to chase and arrest the Outlaw? (yes/no)")
+            choice = input().lower()
+            if choice == "yes":
+                self.arrest_outlaw()
+        elif self.current_location.name == "Hospital":
+            print("You arrive at the Hospital and receive medical treatment.")
+            self.sheriff.heal()
+            if self.has_deputy:
+                self.deputy.heal()
+                print("The Deputy also receives medical treatment.")
+
+    def talk(self):
+        if self.current_location.name == "Saloon":
+            print("Who would you like to talk to?")
+            print("1. Patrons")
+            print("2. Bartender")
+            choice = input("Enter your choice (1-2): ")
+            if choice == "1":
+                print("You talk to the patrons at the Saloon.")
+                print("They tell you they are sad because they lost their life savings in a bank robbery.")
+            elif choice == "2":
+                print("You talk to the Bartender.")
+                if self.has_deputy:
+                    print("The Bartender trusts you and the Deputy and reveals important information.")
+                    print("She tells you that the Mayor once tried to recruit her to be a part of a secret organization that was corrupt.")
+                    print("However, she turned him down.")
+                    self.has_info = True
+                    print("The Bartender asks to join you. Do you accept? (yes/no)")
+                    choice = input().lower()
+                    if choice == "yes":
+                        self.bartender_joins = True
+                        print("The Bartender joins your team!")
+                else:
+                    print("The Bartender seems to be hiding something and doesn't reveal much.")
+            else:
+                print("Invalid choice. Please try again.")
+        elif self.current_location.name == "Sheriff's Office":
+            print("You talk to the Deputy.")
+            print("The Deputy tells you that the local bank was robbed for all of the town's savings.")
+            print("Deputy: We should go to the crime scene at the bank and investigate. Are you ready to go? (yes/no)")
+            choice = input().lower()
+            if choice == "yes":
+                self.current_location = self.locations["Bank"]
+                self.visited_bank = True
+                self.has_deputy = True
+                print("You and the Deputy head to the Bank to investigate the crime scene.")
+            else:
+                print("Deputy: Okay, let me know when you're ready to investigate the bank robbery.")
+        elif self.current_location.name == "Mayor's Office":
+            if not self.has_info:
+                print("You talk to the Mayor.")
+                print("The Mayor tells you everything is going well in WildTopia.")
+                print("You ask about the robberies, but the Mayor says he hasn't heard anything.")
+            else:
+                print("You confront the Mayor about his corruption.")
+                print("Sheriff: Are you behind the bank robbery and corruption?")
+                print("Mayor: How could you ask me this?")
+                print("You present the Mayor with the evidence.")
+                print("Mayor: I'll make you rich. Do you accept the bribe? (yes/no)")
+                choice = input().lower()
+                if choice == "yes":
+                    print("You become a corrupt Sheriff for the town, but eventually the town is overthrown by an angry mob.")
+                    print("Game Over!")
+                    quit()
+                else:
+                    print("Mayor: Then you leave me no choice!")
+                    print("The Mayor grabs his gun, and you prepare for battle.")
+                    self.fight(self.mayor)
+        elif self.current_location.name == "Bank":
+            if not self.visited_bank:
+                print("You arrive at the Bank and see that it has been robbed.")
+                print("You talk to the Bank Teller.")
+                print("The Bank Teller tells you that he recognized one of the robber's voices and it was someone who hangs out at the inn. The Bank Teller also informs you that the people who robbed the bank knew information that only the Bank Teller, the Sheriff, the Deputy, and the Mayor knew.")
+                self.visited_bank = True
+            else:
+                print("Who would you like to talk to?")
+                print("1. Bank Teller")
+                choice = input("Enter your choice (1): ")
+                if choice == "1":
+                    print("You talk to the Bank Teller.")
+                    print("Bank Teller: I've already told you everything I know about the robbery. I hope you catch those responsible.")
+                else:
+                    print("Invalid choice. Please try again.")
+        elif self.current_location.name == "City Hall":
+            print("You talk to the common folk at City Hall.")
+            print("They tell you about the issues with bandits and outlaws running the town.")
+            print("They mention that the outlaws' hangout spot is the Inn.")
+        elif self.current_location.name == "Inn":
+            print("Who would you like to talk to?")
+            print("1. Bandit")
+            print("2. Outlaw")
+            choice = input("Enter your choice (1-2): ")
+            if choice == "1":
+                print("You question the Bandit at the Inn.")
+                print("The Bandit refuses to talk.")
+            elif choice == "2":
+                print("You question the Outlaw at the Inn.")
+                print("The Outlaw tells you, 'Go to The Pit and you'll find those responsible.'")
+                print("Would you like to go to The Pit? (yes/no)")
+                choice = input().lower()
+                if choice == "yes":
+                    self.current_location = self.hidden_locations["The Pit"]
+                    print("You see two paths in front of you:")
+                    print("1. Take a left")
+                    print("2. Take a right")
+                    choice = input("Enter your choice (1-2): ")
+                    if choice == "1":
+                        print("You take a left and find a secret weapon!")
+                        print("Do you want to take the weapon? (yes/no)")
+                        choice = input().lower()
+                        if choice == "yes":
+                            self.has_secret_weapon = True
+                            print("You take the secret weapon and add it to your inventory.")
+                    elif choice == "2":
+                        print("You take a right and enter a cave filled with snakes.")
+                        print("The Sheriff is bitten by the snakes and loses health.")
+                        self.sheriff.take_damage(50)
+                        if self.has_deputy:
+                            self.deputy.take_damage(50)
+                            print("The Deputy is also bitten by the snakes and loses health.")
+                        print("You are rushed to the Hospital.")
+                        self.current_location = self.locations["Hospital"]
+                    else:
+                        print("Invalid choice. You decide to leave The Pit.")
+                else:
+                    print("You decide not to go to The Pit.")
+            else:
+                print("Invalid choice. Please try again.")
+        elif self.current_location.name == "Jail":
+            if self.outlaw_in_jail:
+                print("You interrogate the Outlaw in Jail.")
+                print("The Outlaw says, 'I'll be out by tomorrow.'")
+            if self.bandit_in_jail:
+                print("You interrogate the Bandit in Jail.")
+                print("The Bandit says, 'This runs much deeper than you think. There are people with higher power working with us.'")
+        elif self.current_location.name == "Hospital":
+            print("You talk to the Doctor.")
+            print("Doctor: You need to be more careful out there.")
+            if not self.has_healing_ointment:
+                print("Doctor: Would you like some healing ointment to take with you? (yes/no)")
+                choice = input().lower()
+                if choice == "yes":
+                    self.has_healing_ointment = True
+                    print("You receive the healing ointment.")
+            else:
+                print("Doctor: Stay safe!")
+
+    def arrest(self):
+        if self.current_location.name == "Inn":
+            print("Who would you like to arrest?")
+            print("1. Bandit")
+            print("2. Outlaw")
+            choice = input("Enter your choice (1-2): ")
+            if choice == "1":
+                self.arrest_bandit()
+            elif choice == "2":
+                self.arrest_outlaw()
+            else:
+                print("Invalid choice. Please try again.")
         else:
-            return self.user_factory.create_user(self.parser)
+            print("There is no one to arrest here.")
 
-    def get_user_info(self, response: str) -> User | None:
-        if "yes" in response:
-            return self._new_user_or_login()
+    def arrest_bandit(self):
+        if self.has_deputy:
+            print("With the help of the Deputy, you successfully arrest the Bandit.")
+            self.bandit_in_jail = True
+            self.current_location = self.locations["Jail"]
         else:
-            return None
+            if random.random() < 0.25:
+                print("The Bandit resists arrest and attacks you!")
+                self.fight(self.bandit)
+            else:
+                print("You successfully arrest the Bandit.")
+                self.bandit_in_jail = True
+                self.current_location = self.locations["Jail"]
 
-    def _load_user(self) -> User:
-        username = self.parser.parse("Enter your username: ")
-        password = self.parser.parse("Enter your password: ")
-        # Here you would typically load the user from a database or file
-        # For simplicity, let's assume the user exists with some legacy points
-        return User(self.parser, username=username, password=password, legacy_points=100)
+    def arrest_outlaw(self):
+        if self.has_deputy:
+            print("With the help of the Deputy, you successfully arrest the Outlaw.")
+            self.outlaw_in_jail = True
+            self.current_location = self.locations["Jail"]
+        else:
+            if random.random() < 0.5:
+                print("The Outlaw resists arrest and attacks you!")
+                self.fight(self.outlaw)
+            else:
+                print("You successfully arrest the Outlaw.")
+                self.outlaw_in_jail = True
+                self.current_location = self.locations["Jail"]
 
+    def attack(self):
+        if self.current_location.name == "Inn":
+            print("Who would you like to attack?")
+            print("1. Bandit")
+            print("2. Outlaw")
+            choice = input("Enter your choice (1-2): ")
+            if choice == "1":
+                print("You attack the Bandit!")
+                if self.has_deputy:
+                    print("The Deputy joins you in the fight!")
+                    self.fight(self.bandit, ally=self.deputy)
+                else:
+                    self.fight(self.bandit)
+            elif choice == "2":
+                print("You attack the Outlaw!")
+                if self.has_deputy:
+                    print("The Deputy joins you in the fight!")
+                    self.fight(self.outlaw, ally=self.deputy)
+                else:
+                    self.fight(self.outlaw)
+            else:
+                print("Invalid choice. Please try again.")
+        else:
+            print("There is no one to attack here.")
 
-class Statistic:
-    def __init__(self, legacy_points: int):
-        self.value = self._generate_starting_value(legacy_points)
-        self.description = None
-        self.min_value = 0
-        self.max_value = 100
+    def fight(self, enemy, ally=None):
+        if ally:
+            print(f"A fight ensues between {self.sheriff.name} and {enemy.name}, with {ally.name} joining the fray!")
+        else:
+            print(f"A fight ensues between {self.sheriff.name} and {enemy.name}!")
+        # Logic for the fight goes here...
 
-    def __str__(self):
-        return f"{self.value}"
+# Initialize the game
+game = Game()
+game.start()
 
-    def increase(self, amount):
-        self.value += amount
-        if self.value > self.max_value:
-            self.value = self.max_value
-
-    def decrease(self, amount):
-        self.value -= amount
-        if self.value < self.min_value:
-            self.value = self.min_value
-
-    def _generate_starting_value(self, legacy_points: int):
-        """Generate a starting value for the statistic based on random number and user properties."""
-        """This is just a placeholder for now. Perhaps some statistics will be based on user properties, and others 
-        will be random."""
-        return legacy_points / 100 + random.randint(1, 3)
-
-
-class Strength(Statistic):
-    def __init__(self, legacy_points: int):
-        super().__init__(legacy_points)
-        self.description = "How much you can lift. How strong you are. How hard you punch, etc."
-
-
-class Dexterity(Statistic):
-    def __init__(self, legacy_points: int):
-        super().__init__(legacy_points)
-        self.description = "How quick your limbs can perform intricate tasks. How adept you are at avoiding blows you anticipate. Impacts speed."
-
-
-class Constitution(Statistic):
-    def __init__(self, legacy_points: int):
-        super().__init__(legacy_points)
-        self.description = "The body's natural armor. Characters may have unique positive or negative constitutions that provide additional capabilities."
-
-
-class Vitality(Statistic):
-    def __init__(self, legacy_points: int):
-        super().__init__(legacy_points)
-        self.description = "A measure of how lively you feel. How many Hit Points you have. An indirect measure of age."
-
-
-class Endurance(Statistic):
-    def __init__(self, legacy_points: int):
-        super().__init__(legacy_points)
-        self.description = "How fast you recover from injuries. How quickly you recover from fatigue."
-
-
-class Intelligence(Statistic):
-    def __init__(self, legacy_points: int):
-        super().__init__(legacy_points)
-        self.description = "How smart you are. How quickly you can connect the dots to solve problems. How fast you can think."
-
-
-class Wisdom(Statistic):
-    def __init__(self, legacy_points: int):
-        super().__init__(legacy_points)
-        self.description = "How effectively you can make choices under pressure. Generally low in younger people."
-
-
-class Knowledge(Statistic):
-    def __init__(self, legacy_points: int):
-        super().__init__(legacy_points)
-        self.description = "How much you know? This is a raw score for all knowledge. Characters may have specific areas of expertise with a bonus or deficit in some areas."
-
-
-class Willpower(Statistic):
-    def __init__(self, legacy_points: int):
-        super().__init__(legacy_points)
-        self.description = "How quickly or effectively the character can overcome natural urges. How susceptible they are to mind control."
-
-
-class Spirit(Statistic):
-    def __init__(self, legacy_points: int):
-        super().__init__(legacy_points)
-        self.description = "Catchall for ability to perform otherworldly acts. High spirit is rare. Different skills have different resource pools they might use like mana, stamina, etc. These are unaffected by spirit. Instead spirit is a measure of how hard it is to learn new otherworldly skills and/or master general skills."
-
-
-class Charisma(Statistic):
-    def __init__(self, legacy_points: int):
-        super().__init__(legacy_points)
-        self.description = "Charisma represents charm, persuasion, and leadership qualities."
-
-
-def start_game():
-    parser = UserInputParser()
-    user_factory = UserFactory()
-    instance_creator = InstanceCreator(user_factory, parser)
-
-    response = parser.parse("Would you like to start a new game? (yes/no)")
-    print(f"Response: {response}")
-    user = instance_creator.get_user_info(response)
-    if user is not None:
-        game_instance = user.current_game
-        if game_instance is not None:
-            response = game_instance.start_game()
-            if response == "Save and quit":
-                user.save_game()
-                print("Game saved. Goodbye!")
-                sys.exit()
-            elif response:
-                print("Goodbye!")
-                sys.exit()
-    else:
-        print("See you next time!")
-        sys.exit()
-
-
-if __name__ == '__main__':
-    start_game()
-#will commit in the morning
-#did a plot and theme 
-#Plot
-
-#Looks good to me I think we can use this as a basis for the background for out game. Also just realized that we did not make any unit tests for our game as well so we need to implement that. 
-#Bet, maybe we can stay after. Also I just thought maybe we can go to the computer science center. I’m also going to ask Allan for help.
-#That a good idea. I was planning on staying anyway but I think getting help from the center to determine how our code looks and its framework will be a good idea. Especially for this extra credit since what he’s asking for we need to have
-
-#Put skill class under characters. 
-#Characters:
-
-#Antagonists: 
-#Mayor- All stats are in the high 90s
-#Outlaw - All stats avg in 70s
-#Bandit - Stats avg is the 50
-#Snakes - Stats avg in the 40s
-
-#In-between 
-#Doctor- stats can range in the 100s
-#Town- The stats can range is the 100s
-
-#Protagonists
-#Sheriff - Some stats in the 90s and some in 70s
-#Deputy- Stats in the high 80’s and 90s
-#Bartender- Stats are in the 90s
-#Horse
-
-#Graphics for extra credit
-#Extra credit for sounds
-#Buttons to press for extra credit
-
-
-
-#Skills go
- #above character. 
