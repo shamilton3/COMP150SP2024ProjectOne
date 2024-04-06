@@ -63,7 +63,7 @@ class Game:
 
     def start(self):
         print("Welcome to WildTopia!")
-        print("You are the Sheriff, and your goal is to uncover the corruption in the town and take down the Mayor.")
+        print("You are the Sheriff, and your goal is to uncover the corruption in the town and solve the mystery behind the bank robbery.")
         self.play()
 
     def play(self):
@@ -157,7 +157,7 @@ class Game:
             if not self.has_info:
                 print("You talk to the Mayor.")
                 print("The Mayor tells you everything is going well in WildTopia.")
-                print("You ask about the robberies, but the Mayor says he hasn't heard anything.")
+                print("You ask about the robberies, but the Mayor says he hasn't heard anything, however you noticed a new golden ring on the mayor's hand, you raise suspicion but don't have enough evidence yet.")
             else:
                 print("You confront the Mayor about his corruption.")
                 print("Sheriff: Are you behind the bank robbery and corruption?")
@@ -185,7 +185,7 @@ class Game:
                 choice = input("Enter your choice (1): ")
                 if choice == "1":
                     print("You talk to the Bank Teller.")
-                    print("Bank Teller: I've already told you everything I know about the robbery. I hope you catch those responsible.")
+                    print("Bank Teller: The Bank Teller tells you that she recognized one of the robber's voices and it was someone who hangs out at the Inn. The Bank Teller also informs you that the people who robbed the bank knew information about the bank that only the Bank Teller, the Sheriff, the Deputy, and the Mayor knew.")
                 else:
                     print("Invalid choice. Please try again.")
         elif self.current_location.name == "City Hall":
@@ -325,9 +325,22 @@ class Game:
             print(f"A fight ensues between {self.sheriff.name} and {enemy.name}, with {ally.name} joining the fray!")
         else:
             print(f"A fight ensues between {self.sheriff.name} and {enemy.name}!")
-        # Logic for the fight goes here...
+        if enemy == self.mayor:
+            print("You have a special weapon. Do you want to use it? (yes/no)")
+            choice = input().lower()
+            if choice == "yes" and self.has_secret_weapon:
+                print("You use the special weapon against the Mayor!")
+                self.mayor.take_damage(300)
+            else:
+                print("You fight the Mayor with your regular attacks.")
+                self.sheriff.attack(enemy, random.randint(10, 20))
+                if ally:
+                    ally.attack(enemy, random.randint(10, 20))
+                enemy.attack(self.sheriff, random.randint(10, 20))
+        else:
+            # Logic for the fight goes here...
+            pass
 
 # Initialize the game
 game = Game()
 game.start()
-
