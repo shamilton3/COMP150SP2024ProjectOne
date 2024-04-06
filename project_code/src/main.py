@@ -202,7 +202,7 @@ class Game:
                 print("The Bandit refuses to talk.")
             elif choice == "2":
                 print("You question the Outlaw at the Inn.")
-                print("The Outlaw tells you, 'Go to The Pit and you'll find those responsible.'")
+                print("The Outlaw tells you, 'Go to The Pit and turn right. there you'll find those responsible for the robbery, but you didn't hear it from me.'")
                 print("Would you like to go to The Pit? (yes/no)")
                 choice = input().lower()
                 if choice == "yes":
@@ -219,7 +219,7 @@ class Game:
                             self.has_secret_weapon = True
                             print("You take the secret weapon and add it to your inventory.")
                     elif choice == "2":
-                        print("You take a right and enter a cave filled with snakes.")
+                        print("You take a right and enter a cave filled with snakes. Its a Trap!! The outlaw tricked you!!.")
                         print("The Sheriff is bitten by the snakes and loses health.")
                         self.sheriff.take_damage(50)
                         if self.has_deputy:
@@ -236,7 +236,7 @@ class Game:
         elif self.current_location.name == "Jail":
             if self.outlaw_in_jail:
                 print("You interrogate the Outlaw in Jail.")
-                print("The Outlaw says, 'I'll be out by tomorrow.'")
+                print("The Outlaw says, 'I'll never talk, I have people in high places, and I'll be out by tomorrow.'")
             if self.bandit_in_jail:
                 print("You interrogate the Bandit in Jail.")
                 print("The Bandit says, 'This runs much deeper than you think. There are people with higher power working with us.'")
@@ -344,3 +344,6 @@ class Game:
 # Initialize the game
 game = Game()
 game.start()
+
+
+#In-between 
